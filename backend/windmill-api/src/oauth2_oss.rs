@@ -169,28 +169,11 @@ pub async fn _refresh_token<'c>(
 }
 
 #[cfg(not(feature = "private"))]
-pub async fn check_nb_of_user(db: &DB) -> error::Result<()> {
-    let nb_users_sso =
-        sqlx::query_scalar!("SELECT COUNT(*) FROM password WHERE login_type != 'password'",)
-            .fetch_one(db)
-            .await?;
-    if nb_users_sso.unwrap_or(0) >= 10 {
-        return Err(error::Error::BadRequest(
-            "You have reached the maximum number of oauth users accounts (10) without an enterprise license"
-                .to_string(),
-        ));
-    }
-
-    let nb_users = sqlx::query_scalar!("SELECT COUNT(*) FROM password",)
-        .fetch_one(db)
-        .await?;
-    if nb_users.unwrap_or(0) >= 50 {
-        return Err(error::Error::BadRequest(
-            "You have reached the maximum number of accounts (50) without an enterprise license"
-                .to_string(),
-        ));
-    }
-    return Ok(());
+pub async fn check_nb_of_user(_db: &DB) -> error::Result<()> {
+    // CUSTOM BUILD: User limit check removed
+    // Original CE limits were: 10 SSO users, 50 total users
+    // This custom build removes those limitations
+    Ok(())
 }
 
 #[derive(Clone, Debug)]

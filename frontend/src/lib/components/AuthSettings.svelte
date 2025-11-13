@@ -93,11 +93,11 @@
 <div class="mb-6">
 	{#if oauths}
 		{#if tab === 'sso'}
-			{#if !$enterpriseLicense || $enterpriseLicense.endsWith('_pro')}
+			<!-- {#if !$enterpriseLicense || $enterpriseLicense.endsWith('_pro')}
 				<Alert type="warning" title="Limited to 10 SSO users">
 					Without EE, the number of SSO users is limited to 10. SCIM/SAML is available on EE
 				</Alert>
-			{/if}
+			{/if} -->
 
 			<div class="py-1"></div>
 			<div class="mb-2">

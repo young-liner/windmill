@@ -221,9 +221,14 @@ WORKDIR ${APP}
 
 RUN ln -s ${APP}/windmill /usr/local/bin/windmill
 
-COPY ./frontend/src/lib/hubPaths.json ${APP}/hubPaths.json
+# CUSTOM BUILD: Skip package caching to speed up build time
+# This means packages will be downloaded on first use instead of being pre-cached
+# Original lines (commented out to save 30-90 minutes build time):
+# COPY ./frontend/src/lib/hubPaths.json ${APP}/hubPaths.json
+# RUN windmill cache ${APP}/hubPaths.json && rm ${APP}/hubPaths.json && chmod -R 777 /tmp/windmill
 
-RUN windmill cache ${APP}/hubPaths.json && rm ${APP}/hubPaths.json && chmod -R 777 /tmp/windmill
+# Just create the windmill temp directory
+RUN mkdir -p /tmp/windmill && chmod -R 777 /tmp/windmill
 
 # Create a non-root user 'windmill' with UID and GID 1000
 RUN addgroup --gid 1000 windmill && \
