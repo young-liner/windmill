@@ -130,9 +130,21 @@ struct Logins {
     oauth: Vec<String>,
     saml: Option<String>,
 }
-#[cfg(not(feature = "private"))]
+#[cfg(all(feature = "oauth2", not(feature = "private")))]
 async fn list_logins() -> error::JsonResult<Logins> {
-    // Implementation is not open source
+    // CUSTOM BUILD: Return actual OAuth logins configured in the system
+    Ok(Json(Logins { 
+        oauth: (&OAUTH_CLIENTS.read().await.logins)
+            .keys()
+            .map(|x| x.to_owned())
+            .collect_vec(),
+        saml: None 
+    }))
+}
+
+#[cfg(not(all(feature = "oauth2", not(feature = "private"))))]
+async fn list_logins() -> error::JsonResult<Logins> {
+    // OAuth not enabled or private feature enabled
     return Ok(Json(Logins { oauth: vec![], saml: None }));
 }
 

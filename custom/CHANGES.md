@@ -59,6 +59,38 @@ pub async fn check_nb_of_user(_db: &DB) -> error::Result<()> {
 - 전체 사용자 50명 제한 제거
 - 사용자 수에 관계없이 항상 성공 반환
 
+**변경 2**: OAuth 로그인 목록 표시 활성화 (133-149번 줄)
+```rust
+// 이전
+#[cfg(not(feature = "private"))]
+async fn list_logins() -> error::JsonResult<Logins> {
+    // Implementation is not open source
+    return Ok(Json(Logins { oauth: vec![], saml: None }));
+}
+
+// 이후
+#[cfg(all(feature = "oauth2", not(feature = "private")))]
+async fn list_logins() -> error::JsonResult<Logins> {
+    // CUSTOM BUILD: Return actual OAuth logins configured in the system
+    Ok(Json(Logins { 
+        oauth: (&OAUTH_CLIENTS.read().await.logins)
+            .keys()
+            .map(|x| x.to_owned())
+            .collect_vec(),
+        saml: None 
+    }))
+}
+
+#[cfg(not(all(feature = "oauth2", not(feature = "private"))))]
+async fn list_logins() -> error::JsonResult<Logins> {
+    // OAuth not enabled or private feature enabled
+    return Ok(Json(Logins { oauth: vec![], saml: None }));
+}
+```
+
+**효과**:
+- 로그인 페이지에서 설정된 OAuth 제공자(Google, Microsoft 등) 버튼이 정상적으로 표시됨
+
 ---
 
 ### 2. 빌드 스크립트 생성

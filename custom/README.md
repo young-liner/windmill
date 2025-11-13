@@ -96,7 +96,49 @@ pub async fn check_nb_of_user(db: &DB) -> error::Result<()> {
 
 **상태**: ✅ **주석 처리됨** - 이 UI 경고는 주석 처리되어 사용자에게 표시되지 않습니다.
 
-### 3. 데이터베이스 스키마
+### 3. OAuth 로그인 버튼 표시 문제
+
+**파일**: `backend/windmill-api/src/oauth2_oss.rs`
+
+**문제**: CE 버전에서는 OAuth 로그인 목록 API(`/oauth/list_logins`)가 항상 빈 배열을 반환하여, 로그인 페이지에서 Google, Microsoft 등의 SSO 버튼이 표시되지 않았습니다.
+
+```rust
+// 이전 (134-137번 줄)
+#[cfg(not(feature = "private"))]
+async fn list_logins() -> error::JsonResult<Logins> {
+    // Implementation is not open source
+    return Ok(Json(Logins { oauth: vec![], saml: None }));
+}
+```
+
+**해결책**: 실제로 설정된 OAuth 제공자 목록을 반환하도록 수정
+
+```rust
+// 이후 (133-149번 줄)
+#[cfg(all(feature = "oauth2", not(feature = "private")))]
+async fn list_logins() -> error::JsonResult<Logins> {
+    // CUSTOM BUILD: Return actual OAuth logins configured in the system
+    Ok(Json(Logins { 
+        oauth: (&OAUTH_CLIENTS.read().await.logins)
+            .keys()
+            .map(|x| x.to_owned())
+            .collect_vec(),
+        saml: None 
+    }))
+}
+
+#[cfg(not(all(feature = "oauth2", not(feature = "private"))))]
+async fn list_logins() -> error::JsonResult<Logins> {
+    // OAuth not enabled or private feature enabled
+    return Ok(Json(Logins { oauth: vec![], saml: None }));
+}
+```
+
+**효과**: 
+- 로그인 페이지에서 설정된 OAuth 제공자(Google, Microsoft 등) 버튼이 정상적으로 표시됩니다.
+- Settings > Instance Settings > SSO에서 설정한 OAuth 제공자가 로그인 화면에 나타납니다.
+
+### 4. 데이터베이스 스키마
 
 제한은 PostgreSQL 데이터베이스의 `password` 테이블을 기반으로 합니다:
 - `email`: 사용자 이메일 (primary key)
@@ -270,7 +312,51 @@ This build includes custom modifications:
 ...
 ```
 
-**4. 스크립트 커스터마이징**
+**4. 빌드 실패 시 해결 방법**
+
+빌드 중 `signal 11 (SIGSEGV)` 또는 컴파일러 크래시 오류가 발생하면 **메모리 부족**이 원인일 가능성이 높습니다.
+
+**해결 방법 A: Colima 메모리 증가 (권장)**
+
+```bash
+# Colima 상태 확인
+colima status
+
+# 메모리 부족 시 Colima 재시작
+colima stop
+colima start --memory 12 --cpu 6  # 12GB 메모리, 6 CPU 코어
+
+# 또는 더 많이
+colima start --memory 16 --cpu 8  # 16GB 메모리, 8 CPU 코어
+```
+
+**해결 방법 B: Dockerfile 최적화 (이미 적용됨)**
+
+`Dockerfile`에서 `CARGO_BUILD_JOBS=4`를 설정하여 병렬 컴파일 작업 수를 제한했습니다:
+
+```dockerfile
+# 81번 줄 및 94번 줄
+CARGO_BUILD_JOBS=4 cargo chef cook --release ...
+CARGO_BUILD_JOBS=4 cargo build --release ...
+```
+
+이는 메모리 사용량을 줄이는 대신 빌드 시간이 약간 길어집니다.
+
+**해결 방법 C: Docker 캐시 정리**
+
+```bash
+# 빌드 캐시 정리
+docker builder prune -a
+
+# 전체 Docker 시스템 정리 (주의: 모든 미사용 리소스 삭제)
+docker system prune -a --volumes
+```
+
+**추가 팁:**
+- 빌드 중 다른 리소스 집약적인 작업(예: 브라우저, IDE 등)을 종료하세요
+- macOS의 경우 Colima 대신 Docker Desktop을 사용하면 자동 메모리 관리가 더 나을 수 있습니다
+
+**5. 스크립트 커스터마이징**
 
 필요에 따라 `build_and_push.sh`를 수정할 수 있습니다:
 

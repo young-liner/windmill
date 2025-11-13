@@ -78,7 +78,7 @@ RUN apt-get update && apt-get install -y libxml2-dev=2.9.* libxmlsec1-dev=1.2.* 
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=$SCCACHE_DIR,sharing=locked \
-    CARGO_NET_GIT_FETCH_WITH_CLI=true RUST_BACKTRACE=1 cargo chef cook --release --features "$features" --recipe-path recipe.json
+    CARGO_NET_GIT_FETCH_WITH_CLI=true RUST_BACKTRACE=1 CARGO_BUILD_JOBS=4 cargo chef cook --release --features "$features" --recipe-path recipe.json
 
 COPY ./openflow.openapi.yaml /openflow.openapi.yaml
 COPY ./backend ./
@@ -91,7 +91,7 @@ COPY .git/ .git/
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=$SCCACHE_DIR,sharing=locked \
-    CARGO_NET_GIT_FETCH_WITH_CLI=true cargo build --release --features "$features"
+    CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_BUILD_JOBS=4 cargo build --release --features "$features"
 
 FROM ${DEBIAN_IMAGE}
 

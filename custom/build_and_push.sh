@@ -24,7 +24,7 @@ set -e
 GCR_REGISTRY="us.gcr.io"
 GCP_PROJECT="liner-219011"
 IMAGE_NAME="windmill/omni"
-IMAGE_TAG="custom-1"
+IMAGE_TAG="custom-3"
 FULL_IMAGE_NAME="${GCR_REGISTRY}/${GCP_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 # Docker configuration
